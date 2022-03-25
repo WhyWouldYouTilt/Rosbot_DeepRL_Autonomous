@@ -10,3 +10,5 @@ The DDPG Algorithm is implemented with the actor_network_bn.py, critiy_network.p
 The Project is based on the Paper: "Virtual-to-real Deep Reinforcement Learning: Continuous Control of Mobile Robots for Mapless Navigation"
 https://arxiv.org/pdf/1703.00420.pdf
 
+and needs Python 2.7 and TF-GPU
+
