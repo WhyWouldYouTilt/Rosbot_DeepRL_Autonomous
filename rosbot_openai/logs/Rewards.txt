@@ -1,0 +1,50 @@
+Average Reward in 10000 Steps : 0
+Total Reward in 10000 Steps: -3102
+Average Reward in 20000 Steps : 0
+Total Reward in 20000 Steps: -2009
+Average Reward in 10000 Steps : 3
+Total Reward in 10000 Steps: 33354
+Average Reward in 20000 Steps : 4
+Total Reward in 20000 Steps: 45365
+Average Reward in 30000 Steps : 0
+Total Reward in 30000 Steps: 2675
+Average Reward in 40000 Steps : -2
+Total Reward in 40000 Steps: -23771
+Average Reward in 50000 Steps : 0
+Total Reward in 50000 Steps: -5141
+Average Reward in 60000 Steps : -3
+Total Reward in 60000 Steps: -37477
+Average Reward in 70000 Steps : 0
+Total Reward in 70000 Steps: 1876
+Average Reward in 80000 Steps : 7
+Total Reward in 80000 Steps: 75302
+Average Reward in 90000 Steps : -3
+Total Reward in 90000 Steps: -33913
+Average Reward in 100000 Steps : 4
+Total Reward in 100000 Steps: 40187
+Average Reward in 110000 Steps : 2
+Total Reward in 110000 Steps: 29937
+Average Reward in 120000 Steps : 0
+Total Reward in 120000 Steps: 9126
+Average Reward in 130000 Steps : 1
+Total Reward in 130000 Steps: 16720
+Average Reward in 140000 Steps : 2
+Total Reward in 140000 Steps: 22260
+Average Reward in 150000 Steps : 6
+Total Reward in 150000 Steps: 65331
+Average Reward in 160000 Steps : 3
+Total Reward in 160000 Steps: 38108
+Average Reward in 170000 Steps : 1
+Total Reward in 170000 Steps: 19842
+Average Reward in 180000 Steps : 3
+Total Reward in 180000 Steps: 35301
+Average Reward in 190000 Steps : 3
+Total Reward in 190000 Steps: 33562
+Average Reward in 200000 Steps : 6
+Total Reward in 200000 Steps: 65744
+Average Reward in 210000 Steps : 6
+Total Reward in 210000 Steps: 65318
+Average Reward in 220000 Steps : 5
+Total Reward in 220000 Steps: 50692
+Average Reward in 230000 Steps : 7
+Total Reward in 230000 Steps: 77291
