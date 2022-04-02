@@ -17,16 +17,16 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Header
 from nav_msgs.msg import Odometry
 
-from interactive_markers.interactive_marker_server import *
-from visualization_msgs.msg import *
-
 # The path is __init__.py of openai_ros, where we import the SumitXlMazeEnv directly
-timestep_limit_per_episode = 5000  # Can be any Value
-diagonal_dis = 8
+timestep_limit_per_episode = 10000  # Can be any Value
+diagonal_dis = math.sqrt(2) * (3.6 + 3.8)
+
+
+
 
 register(
-    id='Husarion_Walldodge-v1',
-    entry_point='walldodge_actor_env:HusarionWalldodgeEnv',
+    id='Husarion_Walldodge-v2',
+    entry_point='ddqn_environment:HusarionWalldodgeEnv',
     max_episode_steps=timestep_limit_per_episode,
 )
 
@@ -40,27 +40,27 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         """
 
         # Only variable needed to be set here
-        self.successful_runs = 0
-        self.total_runs = 0
-        self.reached_count=0
+        self.successful_runs=0
+        self.total_runs=0
         self.yaw = None
         self.rel_theta = None
         self.diff_angle = None
-        number_actions = 2#rospy.get_param('/husarion/n_actions')
+        number_actions = rospy.get_param('/husarion/n_actions')
         self.action_space = spaces.Discrete(number_actions)
 
         # We set the reward range, which is not compulsory but here we do it.
         self.reward_range = (-numpy.inf, numpy.inf)
         self.pub_cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=10)
-        self.odom_pub = rospy.Publisher('odom', Odometry, queue_size=10)
 
         # Actions and Observations
         self.init_linear_forward_speed = rospy.get_param('/husarion/init_linear_forward_speed')
         self.init_linear_turn_speed = rospy.get_param('/husarion/init_linear_turn_speed')
+
         self.linear_forward_speed = rospy.get_param('/husarion/linear_forward_speed')
         self.linear_turn_speed = rospy.get_param('/husarion/linear_turn_speed')
         self.angular_speed = rospy.get_param('/husarion/angular_speed')
 
+        self.new_ranges = rospy.get_param('/husarion/new_ranges')
         self.max_laser_value = rospy.get_param('/husarion/max_laser_value')
         self.min_laser_value = rospy.get_param('/husarion/min_laser_value')
 
@@ -69,10 +69,10 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         self.work_space_y_max = 10.0  # rospy.get_param("/husarion/work_space/y_max")
         self.work_space_y_min = -10.0  # rospy.get_param("/husarion/work_space/y_min")
 
-        # Get Desired Point to start with
+        # Get Desired Point to Get
         self.desired_position = Pose()
         self.desired_position.position.x = 4.0  # rospy.get_param("/husarion/desired_pose/x")
-        self.desired_position.position.y = 4.0  # rospy.get_param("/husarion/desired_pose/y")
+        self.desired_position.position.y = 0.0  # rospy.get_param("/husarion/desired_pose/y")
 
         # Get Robot Position and yaw
         self.position = Pose()
@@ -80,13 +80,14 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
 
         self.precision = rospy.get_param('/husarion/precision')
         self.precision_epsilon = 1.0 / (10.0 * self.precision)
+
         self.move_base_precision = rospy.get_param('/husarion/move_base_precision')
 
         # Rewards
         self.alive_reward = 0.0  # rospy.get_param("/husarion/alive_reward")
-        self.end_episode_points = 200.0  # rospy.get_param("/husarion/end_episode_points")
-        self.closer_to_point_param = 600.0  # rospy.get_param("/husarion/closer_to_point_param")
-        self.collision_reward = -150.0
+        self.end_episode_points = 800.0  # rospy.get_param("/husarion/end_episode_points")
+        self.closer_to_point_param = 500.0  # rospy.get_param("/husarion/closer_to_point_param")
+        self.collision_reward = -600.0
 
         self.cumulated_steps = 0.0
 
@@ -120,7 +121,6 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         rel_dis_x = round(self.desired_position.position.x - self.position.x, 1)
         rel_dis_y = round(self.desired_position.position.y - self.position.y, 1)
 
-
         # Calculate the angle between robot and target
         if rel_dis_x > 0 and rel_dis_y > 0:
             theta = math.atan(rel_dis_y / rel_dis_x)
@@ -151,24 +151,13 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         self.yaw = yaw
         self.diff_angle = diff_angle
 
-
     def _set_init_pose(self):
         """Sets the Robot in its init pose
         """
-        """init_pose = Odometry()
-        init_pose.pose.pose.position.x = 3.0
-        init_pose.pose.pose.position.y = 3.0
-        print("INIT POSE: %s", init_pose)
-
-        self.odom_pub.publish(init_pose)"""
         self.move_base(self.init_linear_forward_speed,
                        self.init_linear_turn_speed,
                        epsilon=self.move_base_precision,
                        update_rate=10)
-        #init_pose = self.get_odom()
-
-
-
 
         return True
 
@@ -193,17 +182,67 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         based on the action number given.
         :param action: The action integer that set s what movement to do next.
         """
-        linear_vel = action[0]/2
-        ang_vel = action[1]*2.5
-        self.past_linear = linear_vel
-        self.past_angular = ang_vel
 
-        vel_cmd = Twist()
-        vel_cmd.linear.x = linear_vel
-        vel_cmd.angular.z = ang_vel
-        self.pub_cmd_vel.publish(vel_cmd)
-
-
+        # rospy.logdebug("Start Set Action ==>" + str(action))
+        # We convert the actions to speed movements to send to the parent class CubeSingleDiskEnv
+        if action == 0:  # FORWARD
+            linear_speed = self.linear_forward_speed
+            angular_speed = -1.5
+            last_action = "FORWARDS"
+            self.move_base(linear_speed, angular_speed, epsilon=self.move_base_precision, update_rate=10)
+        # Turning Right in different degrees'''
+        elif action == 1:
+            linear_speed = self.linear_forward_speed
+            angular_speed = -1.0
+            self.move_base(linear_speed, angular_speed, epsilon=self.move_base_precision, update_rate=10)
+            last_action = "10 Degree Clockwise"
+        elif action == 2:
+            linear_speed = self.linear_forward_speed
+            angular_speed = -0.5
+            self.move_base(linear_speed, angular_speed, epsilon=self.move_base_precision, update_rate=10)
+            last_action = "20 Degree Clockwise"
+        elif action == 3:
+            linear_speed = self.linear_forward_speed
+            angular_speed = 0.0
+            self.move_base(linear_speed, angular_speed, epsilon=self.move_base_precision, update_rate=10)
+            last_action = "30 Degree Clockwise"
+        elif action == 4:
+            linear_speed = self.linear_forward_speed
+            angular_speed = 0.5
+            self.move_base(linear_speed, angular_speed, epsilon=self.move_base_precision, update_rate=10)
+            last_action = "40 Degree Clockwise"
+            # Turning Left every 10 degrees
+        elif action == 5:
+            linear_speed = self.linear_forward_speed
+            angular_speed = 1.0
+            self.move_base(linear_speed, angular_speed, epsilon=self.move_base_precision, update_rate=10)
+            last_action = "10 Degree Not Clockwise"
+        elif action == 6:
+            linear_speed = 0.15
+            angular_speed = 1.5
+            self.move_base(linear_speed, angular_speed, epsilon=self.move_base_precision, update_rate=10)
+            last_action = "20 Degree Not Clockwise"
+        elif action == 7:
+            linear_speed = 0.15
+            angular_speed = -1.5
+            self.move_base(linear_speed, angular_speed, epsilon=self.move_base_precision, update_rate=10)
+            last_action = "20 Degree Not Clockwise"
+        elif action == 8:
+            linear_speed = 0.15
+            angular_speed = -0.7
+            self.move_base(linear_speed, angular_speed, epsilon=self.move_base_precision, update_rate=10)
+            last_action = "20 Degree Not Clockwise"
+        elif action == 9:
+            linear_speed = 0.15
+            angular_speed = 1.5
+            self.move_base(linear_speed, angular_speed, epsilon=self.move_base_precision, update_rate=10)
+            last_action = "20 Degree Not Clockwise"
+        elif action == 10:
+            linear_speed = 0.15
+            angular_speed = 0.7
+            self.move_base(linear_speed, angular_speed, epsilon=self.move_base_precision, update_rate=10)
+            last_action = "20 Degree Not Clockwise"
+        # rospy.logdebug("END Set Action ==>" + str(action) + ", ACTION=" + str(last_action))"""
 
     def _get_obs(self):
         """
@@ -219,23 +258,28 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         diff_angle = self.diff_angle
 
         laser_scan = self.get_laser_scan()
-        discretized_laser_scan = self.discretize_scan_observation(laser_scan)
+        discretized_laser_scan = self.discretize_scan_observation(laser_scan,
+                                                                  self.new_ranges
+                                                                  )
         max_scan = max(discretized_laser_scan)
         for i in range(len(discretized_laser_scan)):
-            discretized_laser_scan[i]/=max_scan
+            discretized_laser_scan[i] /= max_scan
 
         current_x = self.get_current_pos_x()
         current_y = self.get_current_pos_y()
-        current_distance = math.sqrt((self.desired_position.position.x-current_x)*(self.desired_position.position.x-current_x)+(self.desired_position.position.y-current_y)*(self.desired_position.position.y-current_y))
+        current_distance = math.sqrt(
+            (self.desired_position.position.x - current_x) * (self.desired_position.position.x - current_x) + (
+                        self.desired_position.position.y - current_y) * (self.desired_position.position.y - current_y))
 
         yaw = round((yaw / 360), 1)
 
         # Get the linear and angular velocity from past action
         past_lin = self.get_past_linear_action()
         past_ang = self.get_past_angular_action()
-        observations = discretized_laser_scan + [past_lin] + [past_ang] + [current_distance/diagonal_dis] + [rel_theta / 360] + [yaw] + [diff_angle/180]
-        """print("Distance: %s", current_distance/diagonal_dis)
-        print("Distance: %s", rel_theta / 360)"""
+        observations = discretized_laser_scan + [past_lin] + [past_ang] + [current_distance / diagonal_dis] + [
+            rel_theta / 360]
+        # + [yaw/360] + [diff_angle/180]
+        print("OBS: %s", observations)
         return observations
 
     def get_current_pos_x(self):
@@ -247,8 +291,6 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         odometry = self.get_odom()
         y_position = odometry.pose.pose.position.y
         return y_position
-
-
 
     def _is_done(self, observations):
         """
@@ -281,35 +323,29 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         too_close_to_object_180 = self.check_husarion_has_crashed(laser_readings)
         inside_workspace = self.check_inside_workspace(current_position)
         reached_des_pos = self.check_reached_desired_position(current_position,
-                                                              desired_position)
+                                                              desired_position,
+                                                              self.precision_epsilon)
 
         # is_done = too_close_to_object or not (inside_workspace) or reached_des_pos
         is_done = too_close_to_object_180 or not (inside_workspace) or reached_des_pos
 
-        if reached_des_pos and self.reached_count>=3:
-            rand_number = random.randint(0, 8)
+        if reached_des_pos and self.reached_count >= 3:
+            rand_number = random.randint(0, 4)
             file = open("/home/marvin/ros_workspace/src/rosbot_openai/logs/Reached.txt", "a")
-            file.write("REACHED POSITION: "+ str(float(self.desired_position.position.x))+" "+str(float(self.desired_position.position.y))+"\n")
+            file.write("REACHED POSITION: " + str(float(self.desired_position.position.x)) + " " + str(
+                float(self.desired_position.position.y)) + "\n")
             file.close()
             if rand_number == 0:
-                self.update_desired_pos(-3.0, -3.0)
+                self.update_desired_pos(1.0, 3.0)
             elif rand_number == 1:
-                self.update_desired_pos(-4.0, 0.0)
+                self.update_desired_pos(-3.0, 3.0)
             elif rand_number == 2:
-                self.update_desired_pos(-4.0, 4.0)
+                self.update_desired_pos(-3.0, -3.0)
             elif rand_number == 3:
-                self.update_desired_pos(0.0, -3.0)
+                self.update_desired_pos(0.0, -2.0)
             elif rand_number == 4:
-                self.update_desired_pos(0.0, 4.0)
-            elif rand_number == 5:
-                self.update_desired_pos(4.0, -4.0)
-            elif rand_number == 6:
-                self.update_desired_pos(4.0, 1.0)
-            elif rand_number == 7:
-                self.update_desired_pos(-4.0, -2.0)
-            elif rand_number == 8:
-                self.update_desired_pos(-4.0, 2.0)
-            self.reached_count=0
+                self.update_desired_pos(2.0, 3.0)
+            self.reached_count = 0
 
         '''rospy.logwarn("####################")
         rospy.logwarn("too_close_to_object=" + str(too_close_to_object))
@@ -344,7 +380,11 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
 
         distance_from_des_point = self.get_distance_from_desired_point(current_position, desired_position)
 
-        distance_difference = self.previous_distance_from_des_point - distance_from_des_point
+        #print("DISTANCE FROM POINT: %s", distance_from_des_point)
+
+        distance_difference = distance_from_des_point - self.previous_distance_from_des_point
+
+        #print("DISTANCE LAST TIMESTEP: %s", distance_difference)
 
         '''rospy.logwarn("current_position=" + str(current_position))
         rospy.logwarn("desired_point=" + str(desired_position))
@@ -355,21 +395,27 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
 
         if not done:
             # If there has been a decrease in the distance to the desired point, we reward it
-            reward = self.closer_to_point_param * (distance_difference)
+            if distance_difference < 0.0:
+                rospy.logwarn("DECREASE IN DISTANCE GOOD")
+                # reward = self.closer_to_point_reward
+                reward = self.closer_to_point_param * (neg(distance_difference))
+            else:
+                reward = self.alive_reward
         else:
 
             reached_des_pos = self.check_reached_desired_position(current_position,
-                                                                  desired_position)
+                                                                  desired_position,
+                                                                  self.precision_epsilon)
 
             if reached_des_pos:
                 reward = self.end_episode_points
-                self.total_runs += 1
-                self.successful_runs += 1
+                self.total_runs+=1
+                self.successful_runs+=1
                 # rospy.logwarn("GOT TO DESIRED POINT ; DONE, reward=" + str(reward))
             else:
                 reward = self.collision_reward
-                self.total_runs += 1
                 rospy.logerr("SOMETHING WENT WRONG ; DONE, reward=" + str(reward))
+                self.total_runs+=1
 
         self.previous_distance_from_des_point = distance_from_des_point
 
@@ -394,53 +440,18 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         file = open("/home/marvin/ros_workspace/src/rosbot_openai/logs/Change.txt", "a")
 
         file.write(
-            "Changed Position to: " + str(float(self.desired_position.position.x)) + " " + str(float(self.desired_position.position.y))+"\n")
+            "Changed Position to: " + str(float(self.desired_position.position.x)) + " " + str(
+                float(self.desired_position.position.y)) + "\n")
         file.close()
 
-    def discretize_scan_observation(self, data):
+    def discretize_scan_observation(self, data, new_ranges):
         """
          Evtl hier Fehler. Immer gleiche Scans an gleichen Gradzahlen verwenden. Abtasten in z.B. 10 Grad abstaenden
         """
 
         discretized_ranges = []
 
-
-
         for i in range(len(data.ranges)):
-            if (i%20==0):
-                item = data.ranges[i]
-                if item==float('Inf') or numpy.isinf(item):
-                    discretized_ranges.append(self.max_laser_value)
-                elif numpy.isnan(item):
-                    discretized_ranges.append(self.min_laser_value)
-                else:
-                    if item > self.max_laser_value:
-                        discretized_ranges.append(round(self.max_laser_value, 1))
-                    elif item < self.min_laser_value:
-                        discretized_ranges.append(round(self.min_laser_value, 1))
-                    else:
-                        discretized_ranges.append(round(item, 1))
-
-        return discretized_ranges
-
-    def discretize_scan_180(self, data):
-        discretized_ranges = []
-
-        for i in range(0, 180):
-            if (i % 20 == 0):
-                item = data.ranges[i]
-                if item == float('Inf') or numpy.isinf(item):
-                    discretized_ranges.append(self.max_laser_value)
-                elif numpy.isnan(item):
-                    discretized_ranges.append(self.min_laser_value)
-                else:
-                    if item > self.max_laser_value:
-                        discretized_ranges.append(round(self.max_laser_value, 1))
-                    elif item < self.min_laser_value:
-                        discretized_ranges.append(round(self.min_laser_value, 1))
-                    else:
-                        discretized_ranges.append(round(item, 1))
-        for i in range(540, 720):
             if (i % 20 == 0):
                 item = data.ranges[i]
                 if item == float('Inf') or numpy.isinf(item):
@@ -455,6 +466,39 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
                     else:
                         discretized_ranges.append(round(item, 1))
 
+        """filtered_range = []
+
+        nan_value = (self.min_laser_value + self.min_laser_value) / 2.0
+
+        for i, item in enumerate(data.ranges):
+            if (i % mod == 0):
+                if item == float('Inf') or numpy.isinf(item):
+                    # rospy.logerr("Infinite Value=" + str(item)+"Assigning Max value")
+                    discretized_ranges.append(self.max_laser_value)
+                elif numpy.isnan(item):
+                    # rospy.logerr("Nan Value=" + str(item)+"Assigning MIN value")
+                    discretized_ranges.append(self.min_laser_value)
+                else:
+                    # We clamp the laser readings
+                    if item > self.max_laser_value:
+                        # rospy.logwarn("Item Bigger Than MAX, CLAMPING=>" + str(item)+", MAX="+str(self.max_laser_value))
+                        discretized_ranges.append(round(self.max_laser_value, 1))
+                    elif item < self.min_laser_value:
+                        # rospy.logwarn("Item smaller Than MIN, CLAMPING=>" + str(item)+", MIN="+str(self.min_laser_value))
+                        discretized_ranges.append(round(self.min_laser_value, 1))
+                    else:
+                        # rospy.logwarn("Normal Item, no processing=>" + str(item))
+                        discretized_ranges.append(round(item, 1))
+                # We add last value appended
+                filtered_range.append(discretized_ranges[-1])
+            else:
+                # We add value zero
+                filtered_range.append(0.0)
+
+        # rospy.logwarn(">>>>>>>>>>>>>>>>>>>>>>discretized_ranges=>" + str(discretized_ranges))
+
+        self.publish_filtered_laser_scan(laser_original_data=data,
+                                         new_filtered_laser_range=filtered_range)"""
         return discretized_ranges
 
     def get_orientation_euler(self):
@@ -533,7 +577,7 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
 
         return is_inside
 
-    def check_reached_desired_position(self, current_position, desired_position, epsilon=0.4):
+    def check_reached_desired_position(self, current_position, desired_position, epsilon=0.3):
         """
         It return True if the current position is similar to the desired poistion
         """
@@ -552,13 +596,6 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         y_pos_are_close = (y_current <= y_pos_plus) and (y_current > y_pos_minus)
 
         is_in_desired_pos = x_pos_are_close and y_pos_are_close
-
-        if is_in_desired_pos:
-            self.reached_count+=1
-
-
-
-
 
         '''rospy.logdebug("###### IS DESIRED POS ? ######")
         rospy.logdebug("epsilon==>"+str(epsilon))

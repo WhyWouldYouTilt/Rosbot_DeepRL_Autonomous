@@ -53,7 +53,7 @@ class ActorNetwork:
 		b2 = self.variable([layer2_size],layer1_size)
 		W4 = self.variable([layer2_size, layer3_size], layer2_size)
 		b4 = self.variable([layer3_size], layer2_size)
-		W3 = tf.Variable(tf.random_uniform([layer2_size,action_dim],-0.003, 0.003))
+		W3 = tf.Variable(tf.random_uniform([layer3_size,action_dim],-0.003, 0.003))
 		b3 = tf.Variable(tf.random_uniform([action_dim],-0.003,0.003))
 
 		layer1 = tf.matmul(state_input,W1) + b1
