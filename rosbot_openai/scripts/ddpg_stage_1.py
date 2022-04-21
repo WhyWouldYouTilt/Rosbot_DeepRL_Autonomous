@@ -8,11 +8,11 @@ import walldodge_actor_env
 import matplotlib.pyplot as plt
 
 exploration_decay_start_step = 50000
-state_dim = 42
+state_dim = 29
 action_dim = 2
 action_linear_max = 0.25 # m/s
 action_angular_max = 0.25  # rad/s
-is_training = True
+is_training = False
 
 
 def main():
@@ -61,6 +61,12 @@ def main():
                     file.write("Average Reward in " + str(int(time_step)) + " Steps : " + str(int(avg_reward)) + "\n")
                     file.write("Total Reward in " + str(int(time_step)) + " Steps: " + str(int(total_reward)) + "\n")
                     file.close()
+                    file = open("/home/marvin/ros_workspace/src/rosbot_openai/logs/rewards.txt", "a")
+                    file.write(str(int(total_reward)) + ",")
+                    file.close()
+                    file = open("/home/marvin/ros_workspace/src/rosbot_openai/logs/avg_rewards.txt", "a")
+                    file.write(str(int(avg_reward)) + ",")
+                    file.close()
                     total_reward = 0
 
                     runs_total = env.total_runs - total_temp
@@ -69,6 +75,12 @@ def main():
                     file.write("TOTAL RUNS:" + str(runs_total) + "\n")
                     file.write("SUCCESSFUL RUNS:" + str(runs_succ) + "\n")
                     file.write("FINISHED 20000 TRAININGSSTEPS" + "\n")
+                    file.close()
+                    file = open("/home/marvin/ros_workspace/src/rosbot_openai/logs/total.txt", "a")
+                    file.write(str(runs_total) + ",")
+                    file.close()
+                    file = open("/home/marvin/ros_workspace/src/rosbot_openai/logs/succ.txt", "a")
+                    file.write(str(runs_succ) + ",")
                     file.close()
                     total_temp = env.total_runs
                     succ_temp = env.successful_runs
@@ -95,7 +107,7 @@ def main():
             while True:
                 a = agent.action(state)
                 a[0] = np.clip(a[0], 0., 1.)
-                a[1] = np.clip(a[1], -0.5, 0.5)
+                a[1] = np.clip(a[1], -1.0, 1.0)
                 state_, r, done, info = env.step(a)
                 state = state_
                 one_round_step += 1

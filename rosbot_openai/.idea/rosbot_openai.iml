@@ -6,6 +6,8 @@
       <excludeFolder url="file://$MODULE_DIR$/py2.7" />
       <excludeFolder url="file://$MODULE_DIR$/AtariDQN" />
       <excludeFolder url="file://$MODULE_DIR$/tfgpu" />
+      <excludeFolder url="file://$MODULE_DIR$/ppo" />
+      <excludeFolder url="file://$MODULE_DIR$/ppo2" />
     </content>
     <orderEntry type="jdk" jdkName="Python 2.7 (tfgpu)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

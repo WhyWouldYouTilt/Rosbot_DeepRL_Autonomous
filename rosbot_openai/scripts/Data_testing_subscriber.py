@@ -6,8 +6,7 @@ from sensor_msgs.msg import Image
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs.msg import BatteryState
 from openai_ros.robot_envs import husarion_env
-import tensorflow as tf
-import ExampleHelperGazeboModel
+#import tensorflow as tf
 
 
 def listener():
@@ -21,13 +20,13 @@ def listener():
     # Creating the different subscribers
 
     # Laserscan
-    rospy.Subscriber('/scan', LaserScan, laser_scan_callback)
+    rospy.Subscriber('/scan_rgbd', LaserScan, laser_scan_callback)
 
-    # RGB Image
-    # rospy.Subscriber('/camera/rgb/image_raw', Image, camera_depth_image_raw_callback)
+    # RGB-D Image
+    #rospy.Subscriber('/camera/depth/image_raw', Image, camera_depth_image_raw_callback)
 
     # Pointcloud
-    # rospy.Subscriber('/camera/depth/points', PointCloud2, camera_depth_pointcloud_callback)
+    #rospy.Subscriber('/camera/depth/points', PointCloud2, camera_depth_pointcloud_callback)
 
     # rospy.Subscriber('/base_scan', LaserScan, degree_callback)
 
@@ -45,41 +44,16 @@ def degree_callback(data):
     rospy.loginfo("LASERDATA 180 DEGREES: %s", data.angle_min)
 
 
-"""def laser_scan_callback(data):
-    discretized_ranges = []
-
-    for i in range(len(data.ranges)):
-        if (i % 20 == 0):
-            item = data.ranges[i]
-            if item == float('Inf') or numpy.isinf(item):
-                discretized_ranges.append(5.5)
-            elif numpy.isnan(item):
-                discretized_ranges.append(0.3)
-            else:
-                if item > 5.5:
-                    discretized_ranges.append(round(5.5, 1))
-                elif item < 0.3:
-                    discretized_ranges.append(round(0.3, 1))
-                else:
-                    discretized_ranges.append(round(item, 1))
-    print("SCAN: %s", discretized_ranges)
-    max_scan = max(discretized_ranges)
-    for i in range(len(discretized_ranges)):
-        discretized_ranges[i] /= max_scan
-
-    print("NORMALIZED: %s", discretized_ranges)"""
-
-
 def laser_scan_callback(data):
     discretized_ranges = []
 
-    for i in range(0, 180):
+    for i in range(0, 640):
         if (i % 20 == 0):
             item = data.ranges[i]
             if item == float('Inf') or numpy.isinf(item):
                 discretized_ranges.append(5.5)
             elif numpy.isnan(item):
-                discretized_ranges.append(0.3)
+                discretized_ranges.append(0.6)
             else:
                 if item > 5.5:
                     discretized_ranges.append(round(5.5, 1))
@@ -87,25 +61,12 @@ def laser_scan_callback(data):
                     discretized_ranges.append(round(0.3, 1))
                 else:
                     discretized_ranges.append(round(item, 1))
-    for i in range(540, 720):
-        if (i % 20 == 0):
-            item = data.ranges[i]
-            if item == float('Inf') or numpy.isinf(item):
-                discretized_ranges.append(5.5)
-            elif numpy.isnan(item):
-                discretized_ranges.append(0.3)
-            else:
-                if item > 5.5:
-                    discretized_ranges.append(round(5.5, 1))
-                elif item < 0.3:
-                    discretized_ranges.append(round(0.3, 1))
-                else:
-                    discretized_ranges.append(round(item, 1))
+
     print("SCAN: %s", discretized_ranges)
 
 
 def camera_depth_image_raw_callback(data):
-    rospy.loginfo("RGB IMAGEDATA: %s", data.height)
+    rospy.loginfo("RGB IMAGEDATA: %s", data.width)
 
 
 def camera_depth_pointcloud_callback(data):

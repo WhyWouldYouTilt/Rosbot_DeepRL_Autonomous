@@ -12,7 +12,7 @@ from gym.envs.registration import register
 from geometry_msgs.msg import Vector3
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Point, Pose
-from tf.transformations import euler_from_quaternion
+#from tf.transformations import euler_from_quaternion
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Header
 from nav_msgs.msg import Odometry
@@ -26,7 +26,7 @@ diagonal_dis = 8
 
 register(
     id='Husarion_Walldodge-v1',
-    entry_point='walldodge_actor_env:HusarionWalldodgeEnv',
+    entry_point='ppo_env:HusarionWalldodgeEnv',
     max_episode_steps=timestep_limit_per_episode,
 )
 
@@ -72,8 +72,8 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
 
         # Get Desired Point to start with
         self.desired_position = Pose()
-        self.desired_position.position.x = -3.0  # rospy.get_param("/husarion/desired_pose/x")
-        self.desired_position.position.y = -3.0  # rospy.get_param("/husarion/desired_pose/y")
+        self.desired_position.position.x = -4.0  # rospy.get_param("/husarion/desired_pose/x")
+        self.desired_position.position.y = 0.0  # rospy.get_param("/husarion/desired_pose/y")
 
         # Get Robot Position and yaw
         self.position = Pose()
@@ -88,7 +88,7 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         self.end_episode_points = 200.0  # rospy.get_param("/husarion/end_episode_points")
         self.closer_to_point_param = 600.0  # rospy.get_param("/husarion/closer_to_point_param")
         self.collision_reward = -150.0
-        self.angle_reward = 1.0
+        self.angle_reward = 2.0
 
         self.cumulated_steps = 0.0
 
@@ -105,6 +105,7 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
 
     def get_past_linear_action(self):
         return self.past_linear
+
 
     # Get the odom position
     def getOdometry(self, odom):
@@ -142,12 +143,14 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
             theta = math.pi
         rel_theta = round(math.degrees(theta), 2)
 
+
         diff_angle = abs(rel_theta - yaw)
 
         if diff_angle <= 180:
             diff_angle = round(diff_angle, 2)
         else:
             diff_angle = round(360 - diff_angle, 2)
+
 
         self.rel_theta = rel_theta
         self.yaw = yaw
@@ -197,8 +200,11 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         based on the action number given.
         :param action: The action integer that set s what movement to do next.
         """
+
         linear_vel = action[0]/2
         ang_vel = action[1]*2.5
+        print("action: %s", action)
+
         self.past_linear = linear_vel
         self.past_angular = ang_vel
 
@@ -233,8 +239,7 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         current_distance = math.sqrt((self.desired_position.position.x-current_x)*(self.desired_position.position.x-current_x)+(self.desired_position.position.y-current_y)*(self.desired_position.position.y-current_y))
 
         yaw = round((yaw / 360), 1)
-        diff_angle = round((diff_angle / 180), 2)
-
+        diff_angle = round((diff_angle/180),2)
         # Get the linear and angular velocity from past action
         past_lin = self.get_past_linear_action()
         past_ang = self.get_past_angular_action()
@@ -330,7 +335,7 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
 
 
         #Uncomment for training
-        """if reached_des_pos and self.reached_count>=3:
+        if reached_des_pos and self.reached_count>=3:
             rand_number = random.randint(0, 8)
             file = open("/home/marvin/ros_workspace/src/rosbot_openai/logs/Reached.txt", "a")
             file.write("REACHED POSITION: "+ str(float(self.desired_position.position.x))+" "+str(float(self.desired_position.position.y))+"\n")
@@ -353,7 +358,7 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
                 self.update_desired_pos(-4.0, -2.0)
             elif rand_number == 8:
                 self.update_desired_pos(-4.0, 2.0)
-            self.reached_count=0"""
+            self.reached_count=0
 
 
         return is_done
@@ -389,16 +394,11 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         diff_angle = self.diff_angle
         diff_angle_diff = self.prev_diff_angle - diff_angle
 
-        '''rospy.logwarn("current_position=" + str(current_position))
-        rospy.logwarn("desired_point=" + str(desired_position))
-
-        rospy.logwarn("total_distance_from_des_point=" + str(self.previous_distance_from_des_point))
-        rospy.logwarn("distance_from_des_point=" + str(distance_from_des_point))
-        rospy.logwarn("distance_difference=" + str(distance_difference))'''
-
+        print("DIFF: %s", diff_angle_diff)
         if not done:
             # If there has been a decrease in the distance to the desired point, we reward it
-            reward = self.closer_to_point_param * (distance_difference) + (self.angle_reward * diff_angle_diff)
+            # If there has been a decrease in the angle to the desired point, we reward it
+            reward = (self.closer_to_point_param * distance_difference) + (self.angle_reward * diff_angle_diff)
         else:
 
             reached_des_pos = self.check_reached_desired_position(current_position,
@@ -411,7 +411,6 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
             else:
                 reward = self.collision_reward
                 rospy.logerr("SOMETHING WENT WRONG ; DONE, reward=" + str(reward))
-
         self.previous_distance_from_des_point = distance_from_des_point
         self.prev_diff_angle = diff_angle
 
@@ -499,7 +498,7 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
 
         return discretized_ranges
 
-    def get_orientation_euler(self):
+    """def get_orientation_euler(self):
         # We convert from quaternions to euler
         orientation_list = [self.odom.pose.pose.orientation.x,
                             self.odom.pose.pose.orientation.y,
@@ -507,7 +506,7 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
                             self.odom.pose.pose.orientation.w]
 
         roll, pitch, yaw = euler_from_quaternion(orientation_list)
-        return roll, pitch, yaw
+        return roll, pitch, yaw"""
 
     def get_distance_from_desired_point(self, current_position, desired_position):
         """
