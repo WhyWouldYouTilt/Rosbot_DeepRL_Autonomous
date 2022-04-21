@@ -1,0 +1,6 @@
+model_checkpoint_path: "/home/marvin/ros_workspace/src/rosbot_openai/ddpg_models/actor/actor-network-ddpg-600000"
+all_model_checkpoint_paths: "/home/marvin/ros_workspace/src/rosbot_openai/ddpg_models/actor/actor-network-ddpg-200000"
+all_model_checkpoint_paths: "/home/marvin/ros_workspace/src/rosbot_openai/ddpg_models/actor/actor-network-ddpg-300000"
+all_model_checkpoint_paths: "/home/marvin/ros_workspace/src/rosbot_openai/ddpg_models/actor/actor-network-ddpg-400000"
+all_model_checkpoint_paths: "/home/marvin/ros_workspace/src/rosbot_openai/ddpg_models/actor/actor-network-ddpg-500000"
+all_model_checkpoint_paths: "/home/marvin/ros_workspace/src/rosbot_openai/ddpg_models/actor/actor-network-ddpg-600000"

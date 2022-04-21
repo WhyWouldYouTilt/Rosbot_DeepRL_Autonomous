@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+    <arg name="use_gazebo" default="false" />
+
+  <!-- Depth Image to Laser Scan Node -->
+  <node name="depthimage_to_laserscan" pkg="depthimage_to_laserscan" type="depthimage_to_laserscan" args="">
+
+    <remap from="image"       to="/camera/depth/image_raw"/> <!-- change here for your camera depth topic name. Default: "/camera/depth/image_raw" -->
+
+    <remap from="camera_info" to="/camera/depth/camera_info"/> 
+    <!-- the remap for camera_info by default uses the same path as the one given to the image topic. Default: "<path_to_image_topic>/camera_info>" -->
+
+    <!-- PARAMETERS: -->
+    <!-- These are the default values. --> 
+    <param name="scan_height"     type="int"    value="1"/> <!-- default: 1 pixel. Number of pixel rows used to generate laser scan. -->
+    <param name="scan_time"       type="double" value="0.033"/> <!-- default:0.033, 30 FPS . Time between scans. -->
+    <param name="range_min"       type="double" value="0.45"/> <!--default:0.45m. Ranges less than this are considered -Inf. -->
+    <param name="range_max"       type="double" value="10.0"/> <!--default: 10m. Ranges less than this are considered +Inf. -->
+    <param name="output_frame_id" type="str"    value="camera_depth_frame"/> <!--default: camera_depth_frame. Frame id of the laser scan. -->
+	
+  </node>
+    
+
+    <!-- Gazebo -->
+    <group if="$(arg use_gazebo)">
+        <include file="$(find rosbot_gazebo)/launch/maze_world.launch" />
+        <include file="$(find rosbot_description)/launch/rosbot_gazebo.launch"/>
+            <param name="use_sim_time" value="true" />
+    </group>
+
+    <node pkg="tf" type="static_transform_publisher" name="laser_broadcaster" args="0 0 0.1 3.14 0 0 base_link laser_frame 100" />
+
+    <node pkg="rviz" type="rviz" name="rviz"/>
+    
+    
+
+    <node pkg="gmapping" type="slam_gmapping" name="gmapping">
+        <param name="base_frame" value="base_link"/>
+        <param name="odom_frame" value="odom" />
+        <param name="delta" value="0.1" />
+    </node>
+
+    <node pkg="laser_filters" type="scan_to_scan_filter_chain" output="screen" name="laser_filter">
+      <rosparam command="load" file="$(find rosbot_openai)/laser_filter_config/180_degree_filter.yaml" />
+    </node>
+
+    <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="hector_trajectory_server" output="screen">
+    	<param name="target_frame_name" type="string" value="odom" />
+    	<param name="source_frame_name" type="string" value="base_link" />
+    	<param name="trajectory_update_rate" type="double" value="4" />
+    	<param name="trajectory_publish_rate" type="double" value="0.25" />
+    </node>
+
+
+</launch>
+

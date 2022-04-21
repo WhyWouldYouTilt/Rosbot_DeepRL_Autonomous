@@ -1,0 +1,10 @@
+<launch>
+
+    <arg name="use_gazebo" default="true"/>
+
+    <include if="$(arg use_gazebo)" file="$(find rosbot_description)/launch/rosbot.launch"/>
+
+    <node pkg="image_view" type="image_view" name="image_view">
+    </node>
+
+</launch>    
