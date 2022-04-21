@@ -12,3 +12,14 @@ https://arxiv.org/pdf/1703.00420.pdf
 
 and needs Python 2.7 and TF-GPU
 
+
+
+
+
+
+Required Packages:
+
+depth_image_to_laserscan (RGBD to Laserscan converter)
+hector_slam (For trajectory plotting)
+openai_ros (Connection between Husarion Rosbot and Gazebo Simulation)
+rosbot_description (Files for the Rosbot)
