@@ -1,0 +1,6 @@
+Rewardfunction:
+
+Arrive: +200
+Collision: -150
+Getting closer: 600* (distance to last timestep)
+Angle reward: 2* (difference of angle to desired position)

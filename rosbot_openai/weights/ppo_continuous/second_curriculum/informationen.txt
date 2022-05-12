@@ -1,0 +1,7 @@
+Es wurde in der Leeren 7x7.world (Box) Trainiert. Roboter sollte einfach nur Ziele erreichen. Nach 200k-400k Steps hat es ganz gut geklappt
+
+Rewardfunktion:
+Goal +200
+Collision -200
+Closer to point 10
+angle reward 0.1

@@ -1,0 +1,5 @@
+Hier hab ich glaub ich als Observations als Laserdaten mit 360° um den Roboter in 10° Abständen abgetastet, deshalb ist die State_size dann auch 42 wenn man die weights laden will.
+
+Zum Laden der Gewichte:
+Man muss in den "ddpg_models" ordner die entsprechenden actor und critic ordner (weights) reinkopieren und in der checkpoint datei muss dann auf das zu ladende Gewicht verlinkt werden.
+Dann in ddpg_stage_1 den Testmode einstellen und das Launchfile ddpg_training.launch ausführen

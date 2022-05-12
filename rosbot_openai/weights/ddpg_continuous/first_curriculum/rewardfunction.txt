@@ -1,0 +1,7 @@
+Goal +200
+Collision -200
+closer 10
+
+Bestrafung bei laser <=0.4 -1
+
+Für 200k Steps trainiert, danach wurd es komisch

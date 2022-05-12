@@ -1,0 +1,3 @@
+Arrive: +200
+Collision: -200
+Closer: 10* (dist)

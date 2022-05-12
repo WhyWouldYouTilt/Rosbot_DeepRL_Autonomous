@@ -1,0 +1,34 @@
+Kostenfunktion:
+
+Goal +200
+Collision -200
+closer to point 600
+
+Observations:
+[28 Laserscans] + [past_lin] + [past_ang] + [current_distance/diagonal_dis] + [rel_theta / 360] + [yaw/360] + [diff_angle/180]
+Laserscans NICHT normalisiert, der rest schon
+
+Netz: 512 jede Layer
+
+Ich Habe die Gewichte mit dem Namen 700k genommen (Sind Gewichte von 800k Steps) weil die Rewardfunktion da am besten aussah
+
+
+Route der Trajectory:
+
+ #Uncomment for testing purposes. You can plan your route here:
+        if reached_des_pos and self.reached_count==1:
+            self.update_desired_pos(4.0,3.0)
+        elif reached_des_pos and self.reached_count==2:
+            self.update_desired_pos(-2.0,0.0)
+        elif reached_des_pos and self.reached_count==3:
+            self.update_desired_pos(4.0,2.0)
+        elif reached_des_pos and self.reached_count==4:
+            self.update_desired_pos(4.0,-4.0)
+
+
+beide Actions werden /2 geteilt damit der roboter stabiler fährt und nicht so schwankt
+
+Funktioniert auch einigermaßen auf welten mit anderen Hindernissen
+
+Ziele die beim Training definiert waren werden gut erreicht. Andere auch, aber Hauptproblem ist, wenn Ziele Nah an einer Wand liegen bzw zwischen 2 Hindernissen. Davor dreht er fast immer ab und versucht
+einen anderen Weg ohne crash zu finden

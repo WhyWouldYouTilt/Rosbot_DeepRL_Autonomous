@@ -1,0 +1,3 @@
+model_checkpoint_path: "/home/marvin/ros_workspace/src/rosbot_openai/ddpg_models/critic/critic-network-ddpg-700000"
+
+
