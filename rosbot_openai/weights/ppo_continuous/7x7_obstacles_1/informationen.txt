@@ -1,0 +1,30 @@
+Kostenfunktion:
+
+Goal +200
+Collision -200
+closer to point 600
+
+Observations:
+[28 Laserscans] + [past_lin] + [past_ang] + [current_distance/diagonal_dis] + [rel_theta / 360] + [yaw/360] + [diff_angle/180]
+Laserscans NICHT normalisiert, der rest schon
+
+Netz: 128 jede Layer
+
+Netz war nach 100k steps schon gut trainiert, siehe statistik
+
+Route der Trajectory:
+
+        if reached_des_pos and self.reached_count==1:
+            self.update_desired_pos(-5.0,-3.0)
+        elif reached_des_pos and self.reached_count==2:
+            self.update_desired_pos(-6.0,6.0)
+        elif reached_des_pos and self.reached_count==3:
+            self.update_desired_pos(-6.0,-6.0)
+        elif reached_des_pos and self.reached_count==4:
+            self.update_desired_pos(5.0,5.0)
+
+
+lin_vel wird /2 geteilt damit der roboter stabiler fährt und nicht so schwankt, ang_vel nicht
+
+
+Evtl kann man noch länger trainieren

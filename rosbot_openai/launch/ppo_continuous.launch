@@ -18,8 +18,8 @@
 	
   </node>
     <!-- Start of Simulation -->
-    <include file="$(find rosbot_openai)/worlds/7x7_obstacles_1.launch" />
-    <!--<include file="$(find rosbot_openai)/worlds/first_stage_5x5.launch" />-->
+    <!--<include file="$(find rosbot_openai)/worlds/7x7.launch" />-->
+    <include file="$(find rosbot_openai)/worlds/7x7_obstacles_2.launch" />
     <!--<include file="$(find rosbot_openai)/worlds/obere_etage.launch" />-->
     <include file="$(find rosbot_description)/launch/rosbot_gazebo.launch"/>
     <param name="use_sim_time" value="true" />

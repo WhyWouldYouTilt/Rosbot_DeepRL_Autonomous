@@ -17,6 +17,8 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Header
 from nav_msgs.msg import Odometry
 
+from gazebo_msgs.srv import SpawnModel, DeleteModel
+
 from interactive_markers.interactive_marker_server import *
 from visualization_msgs.msg import *
 
@@ -40,9 +42,10 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         """
 
         # Only variable needed to be set here
-        self.successful_runs = 0
-        self.total_runs = 0
-        self.collisions =0
+        self.model = None
+        self.successful_runs = 0.0
+        self.total_runs = 0.0
+        self.collisions =0.0
         self.reached_count=0
         self.yaw = None
         self.rel_theta = None
@@ -74,8 +77,8 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
 
         # Get Desired Point to start with
         self.desired_position = Pose()
-        self.desired_position.position.x = 3.0 # rospy.get_param("/husarion/desired_pose/x")
-        self.desired_position.position.y = 3.0  # rospy.get_param("/husarion/desired_pose/y")
+        self.desired_position.position.x = 0.0 # rospy.get_param("/husarion/desired_pose/x")
+        self.desired_position.position.y = 2.0  # rospy.get_param("/husarion/desired_pose/y")
 
         # Get Robot Position and yaw
         self.position = Pose()
@@ -88,9 +91,9 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         # Rewards
         self.alive_reward = 0.0  # rospy.get_param("/husarion/alive_reward")
         self.end_episode_points = 200.0  # rospy.get_param("/husarion/end_episode_points")
-        self.closer_to_point_param = 10.0  # rospy.get_param("/husarion/closer_to_point_param")
+        self.closer_to_point_param = 400.0  # rospy.get_param("/husarion/closer_to_point_param")
         self.collision_reward = -200.0
-        self.angle_reward = 0.1
+        #self.angle_reward = 0.1
 
         self.cumulated_steps = 0.0
 
@@ -174,12 +177,49 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
                        update_rate=10)
         #init_pose = self.get_odom()
 
-        self.total_runs += 1
+        self.total_runs += 1.0
 
+        #self.show_goal_pos()
+        """#Spawn and delete Models for the different tasks of curriculum learning
+        #build_model is used to build a model bases on the .sdf path of it and returns the model_name
+        #delete_model is using the model_name (which is defines while spawning in build_model) to delete the model
+        if self.total_runs==2:
+            self.model = self.build_model("/home/marvin/model_editor_models/diff_1/model.sdf")
+            print("Modelname: %s", self.model)
+        if self.total_runs==3:
+            self.delete_model(self.model)"""
 
 
 
         return True
+
+    def show_goal_pos(self):
+        spawn_model = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+        model = open("/home/marvin/model_editor_models/goal_model/model.sdf", "r")
+        stage = model.read()
+        pose = Pose()
+        pose.position.x = self.desired_position.position.x
+        pose.position.y = self.desired_position.position.y
+        pose.position.z = 1.0
+        spawn_model(model_name="goal", model_xml=stage, robot_namespace='/goal', initial_pose=pose,
+                    reference_frame='world')
+
+    def delete_model(self, modelname):
+        delete_model_prox = rospy.ServiceProxy('gazebo/delete_model', DeleteModel)
+        delete_model_prox(modelname)
+
+    def build_model(self, modelpath):
+        spawn_model = rospy.ServiceProxy("gazebo/spawn_sdf_model", SpawnModel)
+        model = open(modelpath, "r")
+        stage = model.read()
+        model_name = "diff_1_world"
+        pose = Pose()
+        pose.position.x = 0.0
+        pose.position.y = 0.0
+        pose.position.z = 0.0
+        spawn_model(model_name=model_name, model_xml=stage, robot_namespace='/foo', initial_pose=pose, reference_frame='world')
+
+        return model_name
 
     def _init_env_variables(self):
         """
@@ -299,7 +339,7 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         # is_done = too_close_to_object or not (inside_workspace) or reached_des_pos
         is_done = too_close_to_object_180 or not (inside_workspace) or reached_des_pos
         if too_close_to_object_180:
-            self.collisions+=1
+            self.collisions+=1.0
 
         """#Training for the difficult_world:
         if reached_des_pos and self.reached_count >= 3:
@@ -328,22 +368,23 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
 
 
 
-        """#Uncomment for testing purposes. You can plan your route here:
-        if reached_des_pos and self.reached_count==1:
-            self.update_desired_pos(-4.0,-2.0)
+        #Uncomment for testing purposes. You can plan your route here:
+        """if reached_des_pos and self.reached_count==1:
+            self.update_desired_pos(-5.0,-3.0)
         elif reached_des_pos and self.reached_count==2:
-            self.update_desired_pos(-4.0,4.0)
+            self.update_desired_pos(-6.0,6.0)
         elif reached_des_pos and self.reached_count==3:
-            self.update_desired_pos(4.0,4.0)
+            self.update_desired_pos(-6.0,-6.0)
         elif reached_des_pos and self.reached_count==4:
-            self.update_desired_pos(4.0,-4.0)"""
+            self.update_desired_pos(5.0,5.0)"""
 
         if reached_des_pos:
-            file = open("/home/marvin/ros_workspace/src/rosbot_openai/logs/Reached.txt", "a")
+            self.successful_runs += 1.0
+            """file = open("/home/marvin/ros_workspace/src/rosbot_openai/logs/Reached.txt", "a")
             file.write("REACHED POSITION: " + str(float(self.desired_position.position.x)) + " " + str(
                 float(self.desired_position.position.y)) + "\n")
-            file.close()
-            self.successful_runs+=1
+            file.close()"""
+
 
         """if is_done:
             rand_x = random.randint(-6,6)
@@ -388,13 +429,14 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
 
         #Training for 7x7.world
         if is_done:
-            rand_number = random.randint(0, 13)
+            #self.delete_model("goal")
+            rand_number = random.randint(0, 19)
             if rand_number == 0:
-                self.update_desired_pos(-4.0, -4.0)
+                self.update_desired_pos(-4.0, -3.0)
             elif rand_number == 1:
                 self.update_desired_pos(-4.0, 4.0)
             elif rand_number == 2:
-                self.update_desired_pos(-5.0, -5.0)
+                self.update_desired_pos(-5.0, -6.0)
             elif rand_number == 3:
                 self.update_desired_pos(-5.0, 5.0)
             elif rand_number == 4:
@@ -414,17 +456,21 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
             elif rand_number == 11:
                 self.update_desired_pos(3.0, -5.0)
             elif rand_number == 12:
-                self.update_desired_pos(3.0, 5.0)
+                self.update_desired_pos(4.0, 6.0)
             elif rand_number == 13:
                 self.update_desired_pos(-3.0, 4.0)
-            elif rand_number == 10:
+            elif rand_number == 14:
                 self.update_desired_pos(5.0, -2.0)
-            elif rand_number == 11:
-                self.update_desired_pos(5.0, 2.0)
-            elif rand_number == 12:
+            elif rand_number == 15:
+                self.update_desired_pos(5.0, 3.0)
+            elif rand_number == 16:
                 self.update_desired_pos(0.0, 5.0)
-            elif rand_number == 13:
+            elif rand_number == 17:
                 self.update_desired_pos(0.0, -5.0)
+            elif rand_number == 18:
+                self.update_desired_pos(0.0, 6.0)
+            elif rand_number == 19:
+                self.update_desired_pos(0.0, -6.0)
 
 
 
@@ -463,7 +509,7 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         if not done:
             # If there has been a decrease in the distance to the desired point, we reward it
             # If there has been a decrease in the angle to the desired point, we reward it
-            reward = (self.closer_to_point_param * distance_difference) + (self.angle_reward*diff_angle_diff)
+            reward = (self.closer_to_point_param * distance_difference)# + (self.angle_reward*diff_angle_diff)
         else:
 
             reached_des_pos = self.check_reached_desired_position(current_position,

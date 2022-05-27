@@ -171,23 +171,27 @@ def train(env_name, env, state_dim, action_dim, render, solved_reward,
     gamma, lr, betas, ckpt_folder, restore, tb=False, print_interval=10, save_interval=100):
 
     #Change the "ckpt" path to the checkpoint you want to load the weights from
-    ckpt = '/home/marvin/ros_workspace/src/rosbot_openai/ppo_continuous/models/PPO_continuous_100000_Steps_7x7_world.pth'
+    ckpt = '/home/marvin/ros_workspace/src/rosbot_openai/ppo_continuous/models/PPO_continuous_500000_Steps_7x7_obstacles_2.pth'
     if restore:
         print('Load checkpoint from {}'.format(ckpt))
 
     #If you want to load from another checkpoint, you can modify the total_time_step to the steps of the loaded model for correct logging and saving
-    total_time_step = 0
+    total_time_step = 500000
     total_reward = 0
 
     #Variables to log the total and successfull runs:
-    total_temp = 0
-    succ_temp = 0
-    coll_temp = 0
+    total_temp = 0.0
+    succ_temp = 0.0
+    coll_temp = 0.0
     memory = Memory()
 
     ppo = PPO(state_dim, action_dim, action_std, lr, betas, gamma, K_epochs, eps_clip, restore=restore, ckpt=ckpt)
 
+    #Definition of the multi armed bandit for curriculum learning
+    #tasks_n=5
+    #eps_bandit(k=tasks_n, eps=0.1, iters=max_timesteps, mu='sequence')
     running_reward, avg_length, time_step = 0, 0, 0
+
 
     # training loop
     for i_episode in range(1, max_episodes+1):
@@ -213,8 +217,9 @@ def train(env_name, env, state_dim, action_dim, render, solved_reward,
             running_reward += reward
             total_reward +=reward
 
+
             if total_time_step % 100000 == 0:
-                torch.save(ppo.policy.state_dict(), ckpt_folder + '/PPO_continuous_{}_Steps_7x7_obstacles.pth'.format(total_time_step))
+                torch.save(ppo.policy.state_dict(), ckpt_folder + '/PPO_continuous_{}_Steps_7x7_obstacles_2.pth'.format(total_time_step))
 
             if total_time_step % 10000 == 0:
                 runs_total = env.total_runs - total_temp
@@ -241,6 +246,7 @@ def train(env_name, env, state_dim, action_dim, render, solved_reward,
 
             if done:
                 break
+
         avg_length += t
 
 
@@ -261,7 +267,7 @@ def train(env_name, env, state_dim, action_dim, render, solved_reward,
 
 def test(env_name, env, state_dim, action_dim, render, action_std, K_epochs, eps_clip, gamma, lr, betas, ckpt_folder, test_episodes):
 
-    ckpt = '/home/marvin/ros_workspace/src/rosbot_openai/ppo_continuous/models/PPO_continuous_200000_Steps_simple_world.pth'
+    ckpt = '/home/marvin/ros_workspace/src/rosbot_openai/ppo_continuous/models/PPO_continuous_500000_Steps_7x7_obstacles_2.pth'
     print('Load checkpoint from {}'.format(ckpt))
 
     memory = Memory()

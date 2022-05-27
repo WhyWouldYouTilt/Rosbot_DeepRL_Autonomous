@@ -290,34 +290,60 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         # is_done = too_close_to_object or not (inside_workspace) or reached_des_pos
         is_done = too_close_to_object_180 or not (inside_workspace) or reached_des_pos
 
-        """"#Training for the difficult_world:
-        if reached_des_pos and self.reached_count >= 3:
-            rand_number = random.randint(0, 7)
-            file = open("/home/marvin/ros_workspace/src/rosbot_openai/logs/Reached.txt", "a")
-            file.write("REACHED POSITION: " + str(float(self.desired_position.position.x)) + " " + str(
-                float(self.desired_position.position.y)) + "\n")
-            file.close()
+        if reached_des_pos:
+            self.successful_runs += 1.0
+
+        # Training for 7x7.world
+        if is_done:
+            # self.delete_model("goal")
+            rand_number = random.randint(0, 19)
             if rand_number == 0:
-                self.update_desired_pos(-3.0, -1.0)
+                self.update_desired_pos(-4.0, -3.0)
             elif rand_number == 1:
-                self.update_desired_pos(-2.0, -3.0)
+                self.update_desired_pos(-4.0, 4.0)
             elif rand_number == 2:
-                self.update_desired_pos(1.0, -3.0)
+                self.update_desired_pos(-5.0, -6.0)
             elif rand_number == 3:
-                self.update_desired_pos(2.0, -4.0)
+                self.update_desired_pos(-5.0, 5.0)
             elif rand_number == 4:
-                self.update_desired_pos(3.0, 3.0)
+                self.update_desired_pos(5.0, 4.0)
             elif rand_number == 5:
-                self.update_desired_pos(-3.0, 4.0)
+                self.update_desired_pos(5.0, 5.0)
             elif rand_number == 6:
-                self.update_desired_pos(4.0, 1.15)
+                self.update_desired_pos(-6.0, -6.0)
             elif rand_number == 7:
-                self.update_desired_pos(-4.0, -4.0)
-            self.reached_count = 0"""
+                self.update_desired_pos(6.0, 6.0)
+            elif rand_number == 8:
+                self.update_desired_pos(-6.0, 6.0)
+            elif rand_number == 9:
+                self.update_desired_pos(6.0, -6.0)
+            elif rand_number == 10:
+                self.update_desired_pos(4.0, -5.0)
+            elif rand_number == 11:
+                self.update_desired_pos(3.0, -5.0)
+            elif rand_number == 12:
+                self.update_desired_pos(4.0, 6.0)
+            elif rand_number == 13:
+                self.update_desired_pos(-3.0, 4.0)
+            elif rand_number == 14:
+                self.update_desired_pos(5.0, -2.0)
+            elif rand_number == 15:
+                self.update_desired_pos(5.0, 3.0)
+            elif rand_number == 16:
+                self.update_desired_pos(0.0, 5.0)
+            elif rand_number == 17:
+                self.update_desired_pos(0.0, -5.0)
+            elif rand_number == 18:
+                self.update_desired_pos(0.0, 6.0)
+            elif rand_number == 19:
+                self.update_desired_pos(0.0, -6.0)
 
 
 
-        #Uncomment for testing purposes. You can plan your route here:
+
+
+
+        """#Uncomment for testing purposes. You can plan your route here:
         if reached_des_pos and self.reached_count==1:
             self.update_desired_pos(4.0,3.0)
         elif reached_des_pos and self.reached_count==2:
@@ -325,58 +351,10 @@ class HusarionWalldodgeEnv(husarion_env.HusarionEnv):
         elif reached_des_pos and self.reached_count==3:
             self.update_desired_pos(4.0,2.0)
         elif reached_des_pos and self.reached_count==4:
-            self.update_desired_pos(3.0,-3.0)
+            self.update_desired_pos(3.0,-3.0)"""
 
 
-        """#Uncomment for training
-        if reached_des_pos and self.reached_count>=3:
-            rand_number = random.randint(0, 8)
-            file = open("/home/marvin/ros_workspace/src/rosbot_openai/logs/Reached.txt", "a")
-            file.write("REACHED POSITION: "+ str(float(self.desired_position.position.x))+" "+str(float(self.desired_position.position.y))+"\n")
-            file.close()
-            if rand_number == 0:
-                self.update_desired_pos(-3.0, -3.0)
-            elif rand_number == 1:
-                self.update_desired_pos(-4.0, 0.0)
-            elif rand_number == 2:
-                self.update_desired_pos(-4.0, 4.0)
-            elif rand_number == 3:
-                self.update_desired_pos(0.0, -3.0)
-            elif rand_number == 4:
-                self.update_desired_pos(0.0, 4.0)
-            elif rand_number == 5:
-                self.update_desired_pos(4.0, -4.0)
-            elif rand_number == 6:
-                self.update_desired_pos(4.0, 1.0)
-            elif rand_number == 7:
-                self.update_desired_pos(-4.0, -2.0)
-            elif rand_number == 8:
-                self.update_desired_pos(-4.0, 2.0)
-            self.reached_count=0"""
-        """# Training for 7x7.world
-        if reached_des_pos and self.reached_count >= 2:
-            rand_number = random.randint(0, 9)
-            if rand_number == 0:
-                self.update_desired_pos(-5.0, -4.0)
-            elif rand_number == 1:
-                self.update_desired_pos(5.0, -1.0)
-            elif rand_number == 2:
-                self.update_desired_pos(4.0, 5.0)
-            elif rand_number == 3:
-                self.update_desired_pos(-4.0, 4.0)
-            elif rand_number == 4:
-                self.update_desired_pos(5.0, -4.0)
-            elif rand_number == 5:
-                self.update_desired_pos(6.0, -3.0)
-            elif rand_number == 6:
-                self.update_desired_pos(-5.0, 2.0)
-            elif rand_number == 7:
-                self.update_desired_pos(0.0, -5.0)
-            elif rand_number == 8:
-                self.update_desired_pos(0.0, -4.0)
-            elif rand_number == 9:
-                self.update_desired_pos(-5.0, -2.0)
-            self.reached_count = 0"""
+
 
         return is_done
 
